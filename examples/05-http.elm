@@ -22,12 +22,13 @@ main =
 type alias Model =
   { topic : String
   , gifUrl : String
+  , errorMessage : String
   }
 
 
 init : String -> (Model, Cmd Msg)
 init topic =
-  ( Model topic "waiting.gif"
+  ( Model topic "waiting.gif" ""
   , getRandomGif topic
   )
 
@@ -38,6 +39,7 @@ init topic =
 
 type Msg
   = MorePlease
+  | NewTopic String
   | NewGif (Result Http.Error String)
 
 
@@ -45,13 +47,16 @@ update : Msg -> Model -> (Model, Cmd Msg)
 update msg model =
   case msg of
     MorePlease ->
-      (model, getRandomGif model.topic)
+      ({ model | gifUrl = "waiting.gif" }, getRandomGif model.topic)
 
     NewGif (Ok newUrl) ->
-      (Model model.topic newUrl, Cmd.none)
+      (Model model.topic newUrl "", Cmd.none)
 
     NewGif (Err _) ->
-      (model, Cmd.none)
+      ({ model | errorMessage = "Unable to change image because we could not fetch a new one from giphy.", gifUrl = "waiting.gif" }, Cmd.none)
+
+    NewTopic topic ->
+      ({ model | topic = topic }, Cmd.none)
 
 
 
@@ -62,9 +67,12 @@ view : Model -> Html Msg
 view model =
   div []
     [ h2 [] [text model.topic]
-    , button [ onClick MorePlease ] [ text "More Please!" ]
+    , img [ src model.gifUrl ] []
+    , div [ style [("color", "red")] ] [ text model.errorMessage ]
     , br [] []
-    , img [src model.gifUrl] []
+    , input [ onInput NewTopic, placeholder "Topic" ] []
+    , br [] []
+    , button [ onClick MorePlease ] [ text "More Please!" ]
     ]
 
 
